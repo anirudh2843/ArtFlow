@@ -83,14 +83,6 @@ export default function DrawingApp() {
     setActiveLayerId(newLayerId);
   };
 
-  const renameLayer = (id: string, newName: string) => {
-    setLayers((prevLayers) =>
-      prevLayers.map((layer) =>
-        layer.id === id ? { ...layer, name: newName } : layer
-      )
-    );
-  };
-
   const switchActiveLayer = (id: string) => {
     setActiveLayerId(id);
     const layer = layers.find((l) => l.id === id);
@@ -228,7 +220,9 @@ export default function DrawingApp() {
       );
     }
   };
-
+  useEffect(() => {
+    // logic that uses saveToHistory
+  }, [saveToHistory]);
   // Handle undo
   const handleUndo = () => {
     if (historyIndex > 0) {
