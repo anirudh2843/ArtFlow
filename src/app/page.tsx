@@ -1,30 +1,23 @@
 "use client";
 
 import { v4 as uuidv4 } from "uuid";
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Undo, Redo } from "lucide-react";
 import {
   Plus,
   Minus,
   Square,
   Circle,
   Trash2,
-  Undo2,
-  Redo2,
+  Undo,
+  Redo,
   Download,
   Palette,
   Layers,
-  Move,
-  X,
-  Pen,
   Eraser,
-  Save,
-  Layout,
-  CheckCircle,
-  ChevronRight,
-  ChevronLeft,
+  Pen,
+  X,
   Eye,
   EyeOff,
 } from "lucide-react";
@@ -40,44 +33,32 @@ type Layer = {
   zIndex: number;
 };
 
-const objectToMove = {
-  x: 100,
-  y: 100,
-  width: 50,
-  height: 50,
-};
-
 // Main Component
 export default function DrawingApp() {
-  // Canvas State
+  // Add this to your state declarations at the top of the component
+  const [showLayersPanel, setShowLayersPanel] = useState(false);
+  // ArtFlow State
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(5);
-  const [opacity, setOpacity] = useState(1);
-  const [brushPattern, setBrushPattern] = useState("standard");
   const [startPoint, setStartPoint] = useState<Point | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
-  // History State for Undo/Redo
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-
-  // move
-  const [mode, setMode] = useState("pen");
-  const [dragging, setDragging] = useState(false); // To track if dragging is happening
+  const [mode, setMode] = useState<DrawingMode>("pen");
+  const [dragging, setDragging] = useState(false);
   const [draggedObject, setDraggedObject] = useState<{
     x: number;
     y: number;
     width: number;
     height: number;
-  } | null>(null); // The object being dragged
-
+  } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Layers State
-  const [showLayersPanel, setShowLayersPanel] = useState(false);
-  const [layers, setLayers] = useState([
+  const [layers, setLayers] = useState<Layer[]>([
     {
       id: "layer-1",
       name: "Background",
@@ -102,7 +83,6 @@ export default function DrawingApp() {
     setActiveLayerId(newLayerId);
   };
 
-  // Rename layer
   const renameLayer = (id: string, newName: string) => {
     setLayers((prevLayers) =>
       prevLayers.map((layer) =>
@@ -111,15 +91,12 @@ export default function DrawingApp() {
     );
   };
 
-  // Switch active layer
   const switchActiveLayer = (id: string) => {
     setActiveLayerId(id);
-
     const layer = layers.find((l) => l.id === id);
     if (layer && canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
-
       if (ctx && layer.content) {
         const img = new Image();
         img.onload = () => {
@@ -130,7 +107,7 @@ export default function DrawingApp() {
       }
     }
   };
-  // Toggle layer visibility
+
   const toggleLayerVisibility = (layerId: string) => {
     setLayers((prevLayers) =>
       prevLayers.map((layer) =>
@@ -139,18 +116,13 @@ export default function DrawingApp() {
     );
   };
 
-  // Delete layer
   const deleteLayer = (id: string) => {
     if (layers.length <= 1) return; // Prevent deleting the last layer
-
     const newLayers = layers.filter((layer) => layer.id !== id);
     setLayers(newLayers);
-
     if (id === activeLayerId) {
       const newActiveLayer = newLayers[0]?.id;
       setActiveLayerId(newActiveLayer);
-
-      // Load content of the new active layer (if available)
       if (newActiveLayer && canvasRef.current && newLayers[0]?.content) {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext("2d");
@@ -165,33 +137,6 @@ export default function DrawingApp() {
       }
     }
   };
-
-  // Animation States
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-
-  // Custom Color Palette
-  const [customColors, setCustomColors] = useState<string[]>([
-    "#000000",
-    "#ffffff",
-    "#ff0000",
-    "#00ff00",
-    "#0000ff",
-    "#ffff00",
-    "#ff00ff",
-    "#00ffff",
-    "#f28b82",
-    "#fbbc04",
-    "#fff475",
-    "#ccff90",
-    "#a7ffeb",
-    "#cbf0f8",
-    "#aecbfa",
-    "#d7aefb",
-    "#fdcfe8",
-    "#e6c9a8",
-    "#e8eaed",
-    "#9aa0a6",
-  ]);
 
   // Resize Handler
   useEffect(() => {
@@ -343,7 +288,6 @@ export default function DrawingApp() {
   };
 
   // Handle mouse down
-  // Update draggedObject initialization if necessary
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (canvasRef.current) {
       const canvas = canvasRef.current;
@@ -358,16 +302,14 @@ export default function DrawingApp() {
 
         if (mode === "move") {
           if (!draggedObject) {
-            // Initialize draggedObject (can be handled in useEffect as well)
             setDraggedObject({
-              x: 100, // Example initial x position
-              y: 100, // Example initial y position
-              width: 50, // Example object width
-              height: 50, // Example object height
+              x: 100,
+              y: 100,
+              width: 50,
+              height: 50,
             });
           }
 
-          // Only set dragging if within bounds of the dragged object
           if (
             draggedObject &&
             x >= draggedObject.x &&
@@ -375,11 +317,10 @@ export default function DrawingApp() {
             y >= draggedObject.y &&
             y <= draggedObject.y + draggedObject.height
           ) {
-            setDragging(true); // Start dragging the object
+            setDragging(true);
           }
         }
 
-        // For pen and eraser
         if (mode === "pen" || mode === "eraser") {
           ctx.beginPath();
           ctx.moveTo(x, y);
@@ -387,7 +328,6 @@ export default function DrawingApp() {
           ctx.lineWidth = brushSize;
         }
 
-        // For shape mode
         if (mode === "rectangle" || mode === "circle") {
           setStartPoint({ x, y });
         }
@@ -503,6 +443,30 @@ export default function DrawingApp() {
     }
   };
 
+  // Custom Color Palette
+  const [customColors, setCustomColors] = useState<string[]>([
+    "#000000",
+    "#ffffff",
+    "#ff0000",
+    "#00ff00",
+    "#0000ff",
+    "#ffff00",
+    "#ff00ff",
+    "#00ffff",
+    "#f28b82",
+    "#fbbc04",
+    "#fff475",
+    "#ccff90",
+    "#a7ffeb",
+    "#cbf0f8",
+    "#aecbfa",
+    "#d7aefb",
+    "#fdcfe8",
+    "#e6c9a8",
+    "#e8eaed",
+    "#9aa0a6",
+  ]);
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Welcome Modal */}
@@ -593,16 +557,27 @@ export default function DrawingApp() {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 py-3 p-4">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <div className="flex items-center space-x-3 group">
+      <header className="bg-white shadow-sm border-b border-gray-200 py-3 px-4">
+        <div className="container mx-auto flex justify-between items-center">
+          <button
+            onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
+            aria-label={
+              isPanelCollapsed ? "Show tools panel" : "Hide tools panel"
+            }
+            title={isPanelCollapsed ? "Show tools panel" : "Hide tools panel"}
+            className="flex items-center space-x-3 group focus:outline-none"
+          >
             <div className="p-2 bg-indigo-100 rounded-full shadow-sm transition-transform duration-300 group-hover:rotate-6">
-              <Palette className="w-6 h-6 text-indigo-600" />
+              <Palette
+                className={`w-6 h-6 text-indigo-600 transition-transform ${
+                  isPanelCollapsed ? "rotate-[-90deg]" : "rotate-0"
+                }`}
+              />
             </div>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-pink-500 to-purple-600 drop-shadow-md tracking-tight">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-pink-500 to-purple-600 drop-shadow-md tracking-tight select-none">
               ArtFlow
             </h1>
-          </div>
+          </button>
           <div className="flex space-x-3 sm:space-x-2">
             <motion.button
               whileHover={{
@@ -624,7 +599,7 @@ export default function DrawingApp() {
       </header>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden ">
+      <div className="flex flex-1 overflow-hidden">
         {/* Tools Sidebar */}
         <AnimatePresence>
           {!isPanelCollapsed && (
@@ -633,14 +608,14 @@ export default function DrawingApp() {
               animate={{ width: "250px", opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="bg-white border-r border-gray-200 flex flex-col scrollbar-thin scrollbar-thumb-gray-300 "
+              className="bg-white border-r border-gray-200 flex flex-col scrollbar-thin scrollbar-thumb-gray-300 overflow-y-auto max-h-screen mobile-tools-sidebar"
             >
               {/* Drawing Tools */}
               <div className="p-2">
                 <h2 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wider mb-1 ">
                   Drawing Tools
                 </h2>
-                <div className="grid grid-cols-4grid-cols-3 sm:grid-cols-2 gap-2 sm:gap-3 mb-4">
+                <div className="grid grid-cols-4 sm:grid-cols-2 gap-2 sm:gap-3 mb-4 mobile-tools-grid">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -817,7 +792,7 @@ export default function DrawingApp() {
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      className="p-1 rounded hover:bg-gray-200"
+                      className="p-1 rounded hover:bg-gray-200  text-gray-500"
                       onClick={handleAddLayer}
                       aria-label="Add layer"
                     >
@@ -826,7 +801,7 @@ export default function DrawingApp() {
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      className="p-1 rounded hover:bg-gray-200"
+                      className="p-1 rounded hover:bg-gray-200 text-gray-500"
                       onClick={() => setShowLayersPanel(!showLayersPanel)}
                       aria-label="Toggle layers panel"
                     >
@@ -839,7 +814,6 @@ export default function DrawingApp() {
                   </div>
                 </div>
 
-                {/* Layer List */}
                 {showLayersPanel && (
                   <div className="space-y-2 overflow-auto scrollbar-thin scrollbar-thumb-gray-300">
                     {layers.map((layer) => (
@@ -946,7 +920,7 @@ export default function DrawingApp() {
         </AnimatePresence>
 
         {/* Canvas Area */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative mobile-canvas-container">
           <canvas
             ref={canvasRef}
             className="w-full h-full border-2 border-gray-200"
@@ -964,6 +938,47 @@ export default function DrawingApp() {
           &copy; 2025 ArtFlow. All rights reserved.
         </div>
       </footer>
+
+      {/* Custom CSS For Mobile Responsiveness */}
+      <style jsx>{`
+        @media (max-width: 640px) {
+          .mobile-tools-sidebar {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 180px !important;
+            border-right: none !important;
+            border-bottom: 1px solid #e5e7eb;
+            flex-direction: row !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            scrollbar-width: thin;
+          }
+          .mobile-tools-sidebar::-webkit-scrollbar {
+            height: 6px;
+          }
+          .mobile-tools-sidebar::-webkit-scrollbar-thumb {
+            background-color: #9ca3af;
+            border-radius: 3px;
+          }
+
+          .mobile-tools-grid {
+            grid-auto-flow: column !important;
+            grid-auto-columns: min-content !important;
+            grid-template-columns: unset !important;
+            gap: 0.5rem !important;
+            overflow-x: auto;
+          }
+
+          .mobile-tools-grid > button {
+            min-width: 60px;
+            flex-shrink: 0;
+          }
+
+          .mobile-canvas-container {
+            height: calc(100vh - 180px - 56px - 32px);
+          }
+        }
+      `}</style>
     </div>
   );
 }
